@@ -1,76 +1,55 @@
 import { syllableParser } from "./converter.ts";
 import { assertEquals } from "jsr:@std/assert";
 
-const pinyinNumberAndZhuyinPairs = [{
-  pinyin: "yao1",
+const testData = [{
+  pinyinNumber: "yao1",
+  pinyinToneMark: "yāo",
   zhuyin: "ㄧㄠ",
 }, {
-  pinyin: "yao2",
+  pinyinNumber: "yao2",
+  pinyinToneMark: "yáo",
   zhuyin: "ㄧㄠˊ",
 }, {
-  pinyin: "yao3",
+  pinyinNumber: "yao3",
+  pinyinToneMark: "yǎo",
   zhuyin: "ㄧㄠˇ",
 }, {
-  pinyin: "yao4",
+  pinyinNumber: "yao4",
+  pinyinToneMark: "yào",
   zhuyin: "ㄧㄠˋ",
 }, {
-  pinyin: "yao5",
+  pinyinNumber: "yao5",
+  pinyinToneMark: "yao",
   zhuyin: "˙ㄧㄠ",
 }];
 
-pinyinNumberAndZhuyinPairs.forEach(({ pinyin, zhuyin }) =>
-  Deno.test(`converts '${pinyin}' to '${zhuyin}'`, () => {
-    const result = syllableParser.fromPinyinNumber(pinyin).toBopomofo();
+testData.forEach(({ pinyinNumber, zhuyin }) =>
+  Deno.test(`converts '${pinyinNumber}' to '${zhuyin}'`, () => {
+    const result = syllableParser.fromPinyinNumber(pinyinNumber).toBopomofo();
     assertEquals(result, zhuyin);
   })
 );
 
-const pinyinToneMarkAndZhuyinPairs = [{
-  pinyin: "yāo",
-  zhuyin: "ㄧㄠ",
-}, {
-  pinyin: "yáo",
-  zhuyin: "ㄧㄠˊ",
-}, {
-  pinyin: "yǎo",
-  zhuyin: "ㄧㄠˇ",
-}, {
-  pinyin: "yào",
-  zhuyin: "ㄧㄠˋ",
-}, {
-  pinyin: "yao",
-  zhuyin: "˙ㄧㄠ",
-}];
-
-pinyinToneMarkAndZhuyinPairs.forEach(({ pinyin, zhuyin }) =>
-  Deno.test(`converts '${pinyin}' to '${zhuyin}'`, () => {
-    const result = syllableParser.fromPinyinToneMark(pinyin).toBopomofo();
+testData.forEach(({ pinyinToneMark, zhuyin }) =>
+  Deno.test(`converts '${pinyinToneMark}' to '${zhuyin}'`, () => {
+    const result = syllableParser.fromPinyinToneMark(pinyinToneMark)
+      .toBopomofo();
     assertEquals(result, zhuyin);
   })
 );
 
-// Test bopomofo to pinyin conversion
-const bopomofoAndPinyinPairs = [{
-  bopomofo: "ㄧㄠ",
-  pinyin: "yao",
-}, {
-  bopomofo: "ㄧㄠˊ",
-  pinyin: "yáo",
-}, {
-  bopomofo: "ㄧㄠˇ",
-  pinyin: "yǎo",
-}, {
-  bopomofo: "ㄧㄠˋ",
-  pinyin: "yào",
-}, {
-  bopomofo: "˙ㄧㄠ",
-  pinyin: "yao",
-}];
+testData.forEach(({ pinyinToneMark, pinyinNumber }) =>
+  Deno.test(`converts '${pinyinToneMark}' to '${pinyinNumber}'`, () => {
+    const result = syllableParser.fromPinyinToneMark(pinyinToneMark)
+      .toPinyinNumber();
+    assertEquals(result, pinyinNumber);
+  })
+);
 
-bopomofoAndPinyinPairs.forEach(({ bopomofo, pinyin }) =>
-  Deno.test(`converts '${bopomofo}' to '${pinyin}'`, () => {
-    const result = syllableParser.fromBopomofo(bopomofo).toPinyin();
-    assertEquals(result, pinyin);
+testData.forEach(({ zhuyin, pinyinNumber }) =>
+  Deno.test(`converts '${zhuyin}' to '${pinyinNumber}'`, () => {
+    const result = syllableParser.fromBopomofo(zhuyin).toPinyinNumber();
+    assertEquals(result, pinyinNumber);
   })
 );
 
