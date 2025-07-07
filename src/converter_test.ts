@@ -1,5 +1,5 @@
-import { syllableParser } from "./converter.ts";
-import { assertEquals } from "jsr:@std/assert";
+import { syllableParser } from "./syllable_parser.ts";
+import { assertEquals, assertThrows } from "jsr:@std/assert";
 
 const testData = [{
   pinyinNumber: "yao1",
@@ -21,6 +21,34 @@ const testData = [{
   pinyinNumber: "yao5",
   pinyinToneMark: "yao",
   zhuyin: "˙ㄧㄠ",
+}, {
+  pinyinNumber: "zhao4",
+  pinyinToneMark: "zhào",
+  zhuyin: "ㄓㄠˋ",
+}, {
+  pinyinNumber: "mei3",
+  pinyinToneMark: "měi",
+  zhuyin: "ㄇㄟˇ",
+}, {
+  pinyinNumber: "jue2",
+  pinyinToneMark: "jué",
+  zhuyin: "ㄐㄩㄝˊ",
+}, {
+  pinyinNumber: "dou1",
+  pinyinToneMark: "dōu",
+  zhuyin: "ㄉㄡ",
+}, {
+  pinyinNumber: "xiao3",
+  pinyinToneMark: "xiǎo",
+  zhuyin: "ㄒㄧㄠˇ",
+}, {
+  pinyinNumber: "dui4",
+  pinyinToneMark: "duì",
+  zhuyin: "ㄉㄨㄟˋ",
+}, {
+  pinyinNumber: "niu2",
+  pinyinToneMark: "niú",
+  zhuyin: "ㄋㄧㄡˊ",
 }];
 
 testData.forEach(({ pinyinNumber, zhuyin }) =>
@@ -53,42 +81,23 @@ testData.forEach(({ zhuyin, pinyinNumber }) =>
   })
 );
 
-// Deno.test("converts 'yao1' to 'ㄧㄠ'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma1").toBopomofo()
-//   assertEquals(result, "ㄧㄠ")
-// })
+testData.forEach(({ zhuyin, pinyinToneMark }) =>
+  Deno.test(`converts '${zhuyin}' to '${pinyinToneMark}'`, () => {
+    const result = syllableParser.fromBopomofo(zhuyin).toPinyinToneMark();
+    assertEquals(result, pinyinToneMark);
+  })
+);
 
-// Deno.test("converts 'ma2' to 'ㄇㄚˊ'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma2").toBopomofo()
-//   assertEquals(result, "ㄇㄚˊ")
-// })
+Deno.test(`invalid pinyin number 'xxx' throws`, () => {
+  assertThrows(() => syllableParser.fromPinyinNumber("xxx"), Error);
+});
 
-// Deno.test("converts 'ma3' to 'ㄇㄚˇ'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma3").toBopomofo()
-//   assertEquals(result, "ㄇㄚˇ")
-// })
+Deno.test(`invalid pinyin tone mark 'xxx' throws`, () => {
+  assertThrows(() => syllableParser.fromPinyinToneMark("xxx"), Error);
+});
 
-// Deno.test("converts 'ma4' to 'ㄇㄚˋ'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma4").toBopomofo()
-//   assertEquals(result, "ㄇㄚˋ")
-// })
+Deno.test(`invalid zhuyin 'xxx' throws`, () => {
+  assertThrows(() => syllableParser.fromBopomofo("xxx"), Error);
+});
 
-// Deno.test("converts 'ma5' to '˙ㄇㄚ'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma5").toBopomofo()
-//   assertEquals(result, "˙ㄇㄚ")
-// })
-
-// Deno.test("converts 'má' to 'ㄇㄚˊ", () => {
-//   const result = SyllableConverter.fromPinyinNumber("má").toBopomofo()
-//   assertEquals(result, "ㄇㄚ")
-// })
-
-// Deno.test("converts 'ㄇㄚˊ' to 'má'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma2").toBopomofo()
-//   assertEquals(result, "ㄇㄚ")
-// })
-
-// Deno.test("converts 'ㄇㄚˊ' to 'ma2'", () => {
-//   const result = SyllableConverter.fromPinyinNumber("ma2").toBopomofo()
-//   assertEquals(result, "ㄇㄚ")
-// })
+// TODO: Add some code coverage metrics

@@ -1,5 +1,5 @@
 {
-  "name": "pinyin-to-bopomofo",
+  "name": "@austinshelby/pinyin-to-bopomofo",
   "version": "0.1.0",
   "exports": "./mod.ts",
   "tasks": {
@@ -9,5 +9,9 @@
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
     "@std/collections": "jsr:@std/collections@^1.1.2"
+  },
+  "publish": {
+    "include": ["LICENSE", "README.md", "src/**/*.ts"],
+    "exclude": ["src/converter_test.ts"]
   }
 }

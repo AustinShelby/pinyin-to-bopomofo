@@ -1,4 +1,4 @@
-import { zip } from "@std/collections";
+import { zip } from "@std/collections/zip";
 
 const pinyinSyllables = [
   "chuang",
@@ -414,7 +414,6 @@ const pinyinSyllables = [
   "m",
   "o",
 ];
-
 const bopomofoSyllables = [
   "ㄔㄨㄤ",
   "ㄕㄨㄤ",
@@ -830,247 +829,15 @@ const bopomofoSyllables = [
   "ㄛ",
 ];
 
-// Validate that both arrays have the same length
 if (pinyinSyllables.length !== bopomofoSyllables.length) {
   throw new Error(
     `Mismatch in syllable arrays: pinyin has ${pinyinSyllables.length} entries, bopomofo has ${bopomofoSyllables.length} entries`,
   );
 }
 
-// Create the maps using zip
-const pinyinToBopomofo = new Map(zip(pinyinSyllables, bopomofoSyllables));
-const bopomofoToPinyin = new Map(zip(bopomofoSyllables, pinyinSyllables));
-
-const toneMap = {
-  [String.fromCodePoint(772)]: "",
-  [String.fromCodePoint(769)]: String.fromCodePoint(714),
-  [String.fromCodePoint(780)]: String.fromCodePoint(711),
-  [String.fromCodePoint(768)]: String.fromCodePoint(715),
-  [String.fromCodePoint(183)]: String.fromCodePoint(729),
-  "": String.fromCodePoint(729),
-};
-
-const pinyinToneMap = new Map<string, 1 | 2 | 3 | 4>([
-  [String.fromCodePoint(772), 1],
-  [String.fromCodePoint(769), 2],
-  [String.fromCodePoint(780), 3],
-  [String.fromCodePoint(768), 4],
-]);
-
-const zhuyinToneMap = new Map<string, 2 | 3 | 4 | 5>([
-  [String.fromCodePoint(714), 2],
-  [String.fromCodePoint(711), 3],
-  [String.fromCodePoint(715), 4],
-  [String.fromCodePoint(729), 5],
-]);
-
-const zhuyinTones = {
-  1: "",
-  2: String.fromCodePoint(714),
-  3: String.fromCodePoint(711),
-  4: String.fromCodePoint(715),
-  5: String.fromCodePoint(729),
-};
-
-const pinyinTones = {
-  1: String.fromCodePoint(772),
-  2: String.fromCodePoint(769),
-  3: String.fromCodePoint(780),
-  4: String.fromCodePoint(768),
-  5: "",
-};
-
-const pinyinToneRegex = new RegExp(
-  `(${
-    [
-      String.fromCodePoint(772),
-      String.fromCodePoint(769),
-      String.fromCodePoint(780),
-      String.fromCodePoint(768),
-      String.fromCodePoint(183),
-    ].join("|")
-  })`,
-  "i",
+export const pinyinToBopomofo = new Map(
+  zip(pinyinSyllables, bopomofoSyllables),
 );
-
-type Tones = 1 | 2 | 3 | 4 | 5;
-
-export type SyllableAST = {
-  syllable: string;
-  tone: Tones;
-};
-
-export class SyllableParser {
-  public fromPinyinNumber(text: string): SyllableConverter {
-    const syllable = text.slice(0, -1);
-    const tone = text.slice(-1);
-
-    if (!this.isValidSyllable(syllable)) {
-      throw new Error(`Invalid syllable '${syllable}'`);
-    }
-
-    const parsedTone = this.parseTone(tone);
-
-    if (!parsedTone.isValid) {
-      throw new Error(`Invalid tone '${tone}'`);
-    }
-
-    return new SyllableConverter({
-      syllable: syllable,
-      tone: parsedTone.tone,
-    });
-  }
-
-  public fromPinyinToneMark(text: string): SyllableConverter {
-    const normalizedText = text.normalize("NFD");
-    const matchIndex = normalizedText.search(pinyinToneRegex);
-
-    if (matchIndex === -1) {
-      return new SyllableConverter({
-        syllable: normalizedText,
-        tone: 5,
-      });
-    }
-
-    const toneMark = normalizedText.slice(matchIndex, matchIndex + 1);
-    const syllableHead = normalizedText.slice(0, matchIndex);
-    const syllableTail = normalizedText.slice(matchIndex + 1);
-
-    const syllable = `${syllableHead}${syllableTail}`;
-
-    if (!this.isValidSyllable(syllable)) {
-      throw new Error(`Invalid syllable '${syllable}'`);
-    }
-
-    const parsedTone = this.parseToneMark(toneMark);
-
-    if (!parsedTone.isValid) {
-      throw new Error(`Invalid tone mark '${toneMark}'`);
-    }
-
-    return new SyllableConverter({
-      syllable: syllable,
-      tone: parsedTone.tone,
-    });
-  }
-
-  public fromBopomofo(text: string): SyllableConverter {
-    const firstCharacter = text.slice(0, 1);
-
-    if (firstCharacter === zhuyinTones[5]) {
-      const bopomofoWithoutTone = text.slice(1);
-      const pinyin = bopomofoToPinyin.get(bopomofoWithoutTone);
-
-      if (!pinyin) {
-        throw new Error(`Invalid bopomofo syllable '${bopomofoWithoutTone}'`);
-      }
-
-      return new SyllableConverter({
-        syllable: pinyin,
-        tone: 5,
-      });
-    }
-
-    const lastCharacter = text.slice(-1);
-
-    const tone = zhuyinToneMap.get(lastCharacter);
-
-    if (tone) {
-      const zhuyinWithoutTone = text.slice(0, -1);
-      const syllable = bopomofoToPinyin.get(zhuyinWithoutTone);
-
-      if (!syllable) {
-        throw new Error(`Invalid syllable '${zhuyinWithoutTone}'`);
-      }
-
-      return new SyllableConverter({
-        syllable,
-        tone,
-      });
-    }
-
-    const syllable = bopomofoToPinyin.get(text);
-
-    if (!syllable) {
-      throw new Error(`Invalid syllable '${text}'`);
-    }
-
-    return new SyllableConverter({
-      syllable,
-      tone: 1,
-    });
-  }
-
-  private parseToneMark(
-    toneMark: string,
-  ): { tone: Exclude<Tones, 5>; isValid: true } | {
-    tone: undefined;
-    isValid: false;
-  } {
-    const toneNumber = pinyinToneMap.get(toneMark);
-
-    if (!toneNumber) {
-      return { tone: undefined, isValid: false };
-    }
-
-    return { tone: toneNumber, isValid: true };
-  }
-
-  private isValidSyllable(syllable: string): boolean {
-    return pinyinToBopomofo.has(syllable);
-  }
-
-  private parseTone(
-    tone: string,
-  ): { tone: Tones; isValid: true } | { tone: undefined; isValid: false } {
-    const toneNumber = Number(tone);
-
-    if (Number.isNaN(toneNumber)) {
-      return { tone: undefined, isValid: false };
-    }
-
-    if (!this.isValidTone(toneNumber)) {
-      return { tone: undefined, isValid: false };
-    }
-
-    return { tone: toneNumber, isValid: true };
-  }
-
-  private isValidTone(toneNumber: number): toneNumber is Tones {
-    return [1, 2, 3, 4, 5].includes(toneNumber);
-  }
-}
-
-export const syllableParser = new SyllableParser();
-
-export class SyllableConverter {
-  constructor(private readonly syllable: SyllableAST) {}
-
-  public toBopomofo(): string {
-    const bopomofo = pinyinToBopomofo.get(this.syllable.syllable);
-
-    if (!bopomofo) {
-      throw new Error(
-        `Couldn't find bopomofo for syllable '${this.syllable.syllable}'`,
-      );
-    }
-
-    const tone = zhuyinTones[this.syllable.tone];
-
-    if (this.syllable.tone === 5) {
-      return `${tone}${bopomofo}`;
-    }
-
-    return `${bopomofo}${tone}`;
-  }
-
-  public toPinyinNumber(): string {
-    return `${this.syllable.syllable}${this.syllable.tone}`;
-  }
-
-  public toPinyinToneMark(): string {
-    const pinyinToneMark = pinyinTones[this.syllable.tone];
-    return "omega";
-    // now the difficult part. Where to put the tone mark. Here are the rules:
-  }
-}
+export const bopomofoToPinyin = new Map(
+  zip(bopomofoSyllables, pinyinSyllables),
+);

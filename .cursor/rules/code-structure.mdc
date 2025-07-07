@@ -12,3 +12,4 @@ Follow these rules:
 5. Always use SOLID principles.
 6. Always use the Deno style guide
    https://docs.deno.com/runtime/contributing/style_guide/
+7. Don't use while or for loops. Prefer array methods
