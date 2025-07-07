@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+
+Follow these rules:
+
+1. Always use const. Never use let or var.
+2. Always use immutable data structures and methods.
+3. This project uses Deno 2.4.0. Always use the latest Deno and TypeScript
+   features.
+4. Always use Clean Code and Clean Architecture principles.
+5. Always use SOLID principles.
+6. Always use the Deno style guide
+   https://docs.deno.com/runtime/contributing/style_guide/

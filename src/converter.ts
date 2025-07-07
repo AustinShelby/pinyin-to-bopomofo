@@ -1,0 +1,332 @@
+import { zip } from "@std/collections";
+
+const pinyinSyllables = [
+  "chuang", "shuang", "zhuang", "chang", "cheng", "chong", "chuai", "chuan",
+  "guang", "huang", "jiang", "jiong", "kuang", "liang", "niang", "qiang",
+  "qiong", "shang", "sheng", "shuai", "shuan", "xiang", "xiong", "zhang",
+  "zheng", "zhong", "zhuai", "zhuan", "bang", "beng", "bian", "biao", "bing",
+  "cang", "ceng", "chai", "chan", "chao", "chen", "chou", "chui", "chua",
+  "chun", "chuo", "cong", "cuan", "dang", "deng", "dian", "diao", "ding",
+  "dong", "duan", "fang", "feng", "gang", "geng", "gong", "guai", "guan",
+  "hang", "heng", "hong", "huai", "huan", "jian", "jiao", "jing", "juan",
+  "kang", "keng", "kong", "kuai", "kuan", "lang", "leng", "lian", "liao",
+  "ling", "long", "lüan", "mang", "meng", "mian", "miao", "ming", "nang",
+  "neng", "nian", "niao", "ning", "nong", "nuan", "pang", "peng", "pian",
+  "piao", "ping", "qian", "qiao", "qing", "quan", "rang", "reng", "rong",
+  "ruan", "sang", "seng", "shai", "shan", "shao", "shei", "shen", "shou",
+  "shua", "shui", "shun", "shuo", "song", "suan", "tang", "teng", "tian",
+  "tiao", "ting", "tong", "tuan", "wang", "weng", "xian", "xiao", "xing",
+  "xuan", "yang", "ying", "yong", "yuan", "zang", "zeng", "zhai", "zhan",
+  "zhao", "zhen", "zhou", "zhua", "zhui", "zhun", "zhuo", "zong", "zuan",
+  "ang", "bai", "ban", "bao", "bei", "ben", "bie", "bin", "cai", "can",
+  "cao", "cou", "cen", "cei", "cha", "che", "chi", "chu", "cui", "cun",
+  "cuo", "dai", "dan", "dao", "den", "dei", "die", "diu", "dou", "dui",
+  "dun", "duo", "eng", "fan", "fiao", "fei", "fen", "fou", "gai", "gan",
+  "gao", "gei", "gen", "gou", "gua", "gui", "gun", "guo", "hai", "han",
+  "hao", "hei", "hen", "hou", "hua", "hui", "hun", "huo", "jia", "jie",
+  "jin", "jiu", "jue", "jun", "kai", "kan", "kao", "ken", "kou", "kua",
+  "kui", "kun", "kuo", "lai", "lan", "lao", "lei", "lia", "lie", "lin",
+  "liu", "lou", "lüe", "lun", "luo", "mai", "man", "mao", "mei", "men",
+  "mie", "min", "miu", "mou", "nai", "nan", "nen", "nao", "nei", "nie",
+  "nin", "niu", "nou", "nüe", "nuo", "pai", "pan", "pao", "pei", "pen",
+  "pie", "pin", "pou", "qia", "qie", "qin", "qiu", "que", "qun", "ran",
+  "rao", "ren", "rou", "rui", "run", "ruo", "sai", "san", "sao", "sen",
+  "sha", "she", "shi", "shu", "sou", "sui", "sun", "suo", "tai", "tan",
+  "tao", "tie", "tou", "tui", "tun", "tuo", "wai", "wan", "wei", "wen",
+  "xia", "xie", "xin", "xiu", "xue", "xun", "yan", "yao", "yin", "you",
+  "yue", "yun", "zai", "zan", "zao", "zei", "zen", "zha", "zhe", "zhi",
+  "zhu", "zou", "zui", "zun", "zuo", "ai", "an", "ao", "ba", "bi", "bo",
+  "bu", "ca", "ce", "ci", "cu", "da", "de", "di", "du", "ei", "en", "er",
+  "fa", "fo", "fu", "ga", "ge", "gu", "ha", "he", "hu", "ji", "ju", "ka",
+  "ke", "ku", "la", "le", "li", "lü", "lu", "lo", "ma", "me", "mi", "mo",
+  "mu", "na", "ni", "nü", "ne", "nu", "ou", "pa", "pi", "po", "pu", "qi",
+  "qu", "re", "ri", "ru", "sa", "se", "si", "su", "ta", "te", "ti", "tu",
+  "wa", "wo", "wu", "xi", "xu", "ya", "ye", "yi", "yu", "yo", "za", "ze",
+  "zi", "zu", "a", "r", "ê", "e", "n", "m", "o",
+];
+
+const bopomofoSyllables = [
+  "ㄔㄨㄤ", "ㄕㄨㄤ", "ㄓㄨㄤ", "ㄔㄤ", "ㄔㄥ", "ㄔㄨㄥ", "ㄔㄨㄞ", "ㄔㄨㄢ",
+  "ㄍㄨㄤ", "ㄏㄨㄤ", "ㄐㄧㄤ", "ㄐㄩㄥ", "ㄎㄨㄤ", "ㄌㄧㄤ", "ㄋㄧㄤ", "ㄑㄧㄤ",
+  "ㄑㄩㄥ", "ㄕㄤ", "ㄕㄥ", "ㄕㄨㄞ", "ㄕㄨㄢ", "ㄒㄧㄤ", "ㄒㄩㄥ", "ㄓㄤ",
+  "ㄓㄥ", "ㄓㄨㄥ", "ㄓㄨㄞ", "ㄓㄨㄢ", "ㄅㄤ", "ㄅㄥ", "ㄅㄧㄢ", "ㄅㄧㄠ", "ㄅㄧㄥ",
+  "ㄘㄤ", "ㄘㄥ", "ㄔㄞ", "ㄔㄢ", "ㄔㄠ", "ㄔㄣ", "ㄔㄡ", "ㄔㄨㄟ", "ㄔㄨㄚ",
+  "ㄔㄨㄣ", "ㄔㄨㄛ", "ㄘㄨㄥ", "ㄘㄨㄢ", "ㄉㄤ", "ㄉㄥ", "ㄉㄧㄢ", "ㄉㄧㄠ", "ㄉㄧㄥ",
+  "ㄉㄨㄥ", "ㄉㄨㄢ", "ㄈㄤ", "ㄈㄥ", "ㄍㄤ", "ㄍㄥ", "ㄍㄨㄥ", "ㄍㄨㄞ", "ㄍㄨㄢ",
+  "ㄏㄤ", "ㄏㄥ", "ㄏㄨㄥ", "ㄏㄨㄞ", "ㄏㄨㄢ", "ㄐㄧㄢ", "ㄐㄧㄠ", "ㄐㄧㄥ", "ㄐㄩㄢ",
+  "ㄎㄤ", "ㄎㄥ", "ㄎㄨㄥ", "ㄎㄨㄞ", "ㄎㄨㄢ", "ㄌㄤ", "ㄌㄥ", "ㄌㄧㄢ", "ㄌㄧㄠ",
+  "ㄌㄧㄥ", "ㄌㄨㄥ", "ㄌㄨㄢ", "ㄇㄤ", "ㄇㄥ", "ㄇㄧㄢ", "ㄇㄧㄠ", "ㄇㄧㄥ", "ㄋㄤ",
+  "ㄋㄥ", "ㄋㄧㄢ", "ㄋㄧㄠ", "ㄋㄧㄥ", "ㄋㄨㄥ", "ㄋㄨㄢ", "ㄆㄤ", "ㄆㄥ", "ㄆㄧㄢ",
+  "ㄆㄧㄠ", "ㄆㄧㄥ", "ㄑㄧㄢ", "ㄑㄧㄠ", "ㄑㄧㄥ", "ㄑㄩㄢ", "ㄖㄤ", "ㄖㄥ", "ㄖㄨㄥ",
+  "ㄖㄨㄢ", "ㄙㄤ", "ㄙㄥ", "ㄕㄞ", "ㄕㄢ", "ㄕㄠ", "ㄕㄟ", "ㄕㄣ", "ㄕㄡ",
+  "ㄕㄨㄚ", "ㄕㄨㄟ", "ㄕㄨㄣ", "ㄕㄨㄛ", "ㄙㄨㄥ", "ㄙㄨㄢ", "ㄊㄤ", "ㄊㄥ", "ㄊㄧㄢ",
+  "ㄊㄧㄠ", "ㄊㄧㄥ", "ㄊㄨㄥ", "ㄊㄨㄢ", "ㄨㄤ", "ㄨㄥ", "ㄒㄧㄢ", "ㄒㄧㄠ", "ㄒㄧㄥ",
+  "ㄒㄩㄢ", "ㄧㄤ", "ㄧㄥ", "ㄩㄥ", "ㄩㄢ", "ㄗㄤ", "ㄗㄥ", "ㄓㄞ", "ㄓㄢ",
+  "ㄓㄠ", "ㄓㄣ", "ㄓㄡ", "ㄓㄨㄚ", "ㄓㄨㄟ", "ㄓㄨㄣ", "ㄓㄨㄛ", "ㄗㄨㄥ", "ㄗㄨㄢ",
+  "ㄤ", "ㄅㄞ", "ㄅㄢ", "ㄅㄠ", "ㄅㄟ", "ㄅㄣ", "ㄅㄧㄝ", "ㄅㄧㄣ", "ㄘㄞ", "ㄘㄢ",
+  "ㄘㄠ", "ㄘㄡ", "ㄘㄣ", "ㄘㄟ", "ㄔㄚ", "ㄔㄜ", "ㄔ", "ㄔㄨ", "ㄘㄨㄟ", "ㄘㄨㄣ",
+  "ㄘㄨㄛ", "ㄉㄞ", "ㄉㄢ", "ㄉㄠ", "ㄉㄣ", "ㄉㄟ", "ㄉㄧㄝ", "ㄉㄧㄡ", "ㄉㄡ", "ㄉㄨㄟ",
+  "ㄉㄨㄣ", "ㄉㄨㄛ", "ㄥ", "ㄈㄢ", "ㄈㄧㄠ", "ㄈㄟ", "ㄈㄣ", "ㄈㄡ", "ㄍㄞ", "ㄍㄢ",
+  "ㄍㄠ", "ㄍㄟ", "ㄍㄣ", "ㄍㄡ", "ㄍㄨㄚ", "ㄍㄨㄟ", "ㄍㄨㄣ", "ㄍㄨㄛ", "ㄏㄞ", "ㄏㄢ",
+  "ㄏㄠ", "ㄏㄟ", "ㄏㄣ", "ㄏㄡ", "ㄏㄨㄚ", "ㄏㄨㄟ", "ㄏㄨㄣ", "ㄏㄨㄛ", "ㄐㄧㄚ", "ㄐㄧㄝ",
+  "ㄐㄧㄣ", "ㄐㄧㄡ", "ㄐㄩㄝ", "ㄐㄩㄣ", "ㄎㄞ", "ㄎㄢ", "ㄎㄠ", "ㄎㄣ", "ㄎㄡ", "ㄎㄨㄚ",
+  "ㄎㄨㄟ", "ㄎㄨㄣ", "ㄎㄨㄛ", "ㄌㄞ", "ㄌㄢ", "ㄌㄠ", "ㄌㄟ", "ㄌㄧㄚ", "ㄌㄧㄝ", "ㄌㄧㄣ",
+  "ㄌㄧㄡ", "ㄌㄡ", "ㄌㄩㄝ", "ㄌㄨㄣ", "ㄌㄨㄛ", "ㄇㄞ", "ㄇㄢ", "ㄇㄠ", "ㄇㄟ", "ㄇㄣ",
+  "ㄇㄧㄝ", "ㄇㄧㄣ", "ㄇㄧㄡ", "ㄇㄡ", "ㄋㄞ", "ㄋㄢ", "ㄋㄣ", "ㄋㄠ", "ㄋㄟ", "ㄋㄧㄝ",
+  "ㄋㄧㄣ", "ㄋㄧㄡ", "ㄋㄨㄡ", "ㄋㄩㄝ", "ㄋㄨㄛ", "ㄆㄞ", "ㄆㄢ", "ㄆㄠ", "ㄆㄟ", "ㄆㄣ",
+  "ㄆㄧㄝ", "ㄆㄧㄣ", "ㄆㄡ", "ㄑㄧㄚ", "ㄑㄧㄝ", "ㄑㄧㄣ", "ㄑㄧㄡ", "ㄑㄩㄝ", "ㄑㄩㄣ", "ㄖㄢ",
+  "ㄖㄠ", "ㄖㄣ", "ㄖㄡ", "ㄖㄨㄟ", "ㄖㄨㄣ", "ㄖㄨㄛ", "ㄙㄞ", "ㄙㄢ", "ㄙㄠ", "ㄙㄣ",
+  "ㄕㄚ", "ㄕㄜ", "ㄕ", "ㄕㄨ", "ㄙㄡ", "ㄙㄨㄟ", "ㄙㄨㄣ", "ㄙㄨㄛ", "ㄊㄞ", "ㄊㄢ",
+  "ㄊㄠ", "ㄊㄧㄝ", "ㄊㄡ", "ㄊㄨㄟ", "ㄊㄨㄣ", "ㄊㄨㄛ", "ㄨㄞ", "ㄨㄢ", "ㄨㄟ", "ㄨㄣ",
+  "ㄒㄧㄚ", "ㄒㄧㄝ", "ㄒㄧㄣ", "ㄒㄧㄡ", "ㄒㄩㄝ", "ㄒㄩㄣ", "ㄧㄢ", "ㄧㄠ", "ㄧㄣ", "ㄧㄡ",
+  "ㄩㄝ", "ㄩㄣ", "ㄗㄞ", "ㄗㄢ", "ㄗㄠ", "ㄗㄟ", "ㄗㄣ", "ㄓㄚ", "ㄓㄜ", "ㄓ", "ㄓㄨ",
+  "ㄗㄡ", "ㄗㄨㄟ", "ㄗㄨㄣ", "ㄗㄨㄛ", "ㄞ", "ㄢ", "ㄠ", "ㄅㄚ", "ㄅㄧ", "ㄅㄛ", "ㄅㄨ",
+  "ㄘㄚ", "ㄘㄜ", "ㄘ", "ㄘㄨ", "ㄉㄚ", "ㄉㄜ", "ㄉㄧ", "ㄉㄨ", "ㄟ", "ㄣ", "ㄦ", "ㄈㄚ",
+  "ㄈㄛ", "ㄈㄨ", "ㄍㄚ", "ㄍㄜ", "ㄍㄨ", "ㄏㄚ", "ㄏㄜ", "ㄏㄨ", "ㄐㄧ", "ㄐㄩ", "ㄎㄚ",
+  "ㄎㄜ", "ㄎㄨ", "ㄌㄚ", "ㄌㄜ", "ㄌㄧ", "ㄌㄩ", "ㄌㄨ", "ㄌㄛ", "ㄇㄚ", "ㄇㄜ", "ㄇㄧ",
+  "ㄇㄛ", "ㄇㄨ", "ㄋㄚ", "ㄋㄧ", "ㄋㄩ", "ㄋㄜ", "ㄋㄨ", "ㄡ", "ㄆㄚ", "ㄆㄧ", "ㄆㄛ", "ㄆㄨ",
+  "ㄑㄧ", "ㄑㄩ", "ㄖㄜ", "ㄖ", "ㄖㄨ", "ㄙㄚ", "ㄙㄜ", "ㄙ", "ㄙㄨ", "ㄊㄚ", "ㄊㄜ", "ㄊㄧ",
+  "ㄊㄨ", "ㄨㄚ", "ㄨㄛ", "ㄨ", "ㄒㄧ", "ㄒㄩ", "ㄧㄚ", "ㄧㄝ", "ㄧ", "ㄩ", "ㄧㄛ", "ㄗㄚ",
+  "ㄗㄜ", "ㄗ", "ㄗㄨ", "ㄚ", "ㄦ", "ㄝ", "ㄜ", "ㄋ", "ㄇ", "ㄛ",
+];
+
+// Validate that both arrays have the same length
+if (pinyinSyllables.length !== bopomofoSyllables.length) {
+  throw new Error(
+    `Mismatch in syllable arrays: pinyin has ${pinyinSyllables.length} entries, bopomofo has ${bopomofoSyllables.length} entries`,
+  );
+}
+
+// Create the maps using zip
+const pinyinToBopomofo = new Map(zip(pinyinSyllables, bopomofoSyllables));
+const bopomofoToPinyin = new Map(zip(bopomofoSyllables, pinyinSyllables));
+
+const toneMap = {
+  [String.fromCodePoint(772)]: "",
+  [String.fromCodePoint(769)]: String.fromCodePoint(714),
+  [String.fromCodePoint(780)]: String.fromCodePoint(711),
+  [String.fromCodePoint(768)]: String.fromCodePoint(715),
+  [String.fromCodePoint(183)]: String.fromCodePoint(729),
+  "": String.fromCodePoint(729),
+};
+
+const pinyinTones = {
+  1: String.fromCodePoint(772),
+  2: String.fromCodePoint(769),
+  3: String.fromCodePoint(780),
+  4: String.fromCodePoint(768),
+  5: "",
+};
+
+const pinyinToneMap = new Map<string, 1 | 2 | 3 | 4>([
+  [String.fromCodePoint(772), 1],
+  [String.fromCodePoint(769), 2],
+  [String.fromCodePoint(780), 3],
+  [String.fromCodePoint(768), 4],
+]);
+
+const zhuyinTones = {
+  1: "",
+  2: String.fromCodePoint(714),
+  3: String.fromCodePoint(711),
+  4: String.fromCodePoint(715),
+  5: String.fromCodePoint(729),
+};
+
+const pinyinToneRegex = new RegExp(
+  `(${[
+    String.fromCodePoint(772),
+    String.fromCodePoint(769),
+    String.fromCodePoint(780),
+    String.fromCodePoint(768),
+    String.fromCodePoint(183),
+  ].join("|")
+  })`,
+  "i",
+);
+
+type Tones = 1 | 2 | 3 | 4 | 5;
+
+export type SyllableAST = {
+  syllable: string;
+  tone: Tones;
+};
+
+export class SyllableParser {
+  public fromPinyinNumber(text: string): SyllableConverter {
+    const syllable = text.slice(0, -1);
+    const tone = text.slice(-1);
+
+    if (!this.isValidSyllable(syllable)) {
+      throw new Error(`Invalid syllable '${syllable}'`);
+    }
+
+    const parsedTone = this.parseTone(tone);
+
+    if (!parsedTone.isValid) {
+      throw new Error(`Invalid tone '${tone}'`);
+    }
+
+    return new SyllableConverter({
+      syllable: syllable,
+      tone: parsedTone.tone,
+    });
+  }
+
+  public fromPinyinToneMark(text: string): SyllableConverter {
+    const normalizedText = text.normalize("NFD");
+    const matchIndex = normalizedText.search(pinyinToneRegex);
+
+    if (matchIndex === -1) {
+      return new SyllableConverter({
+        syllable: normalizedText,
+        tone: 5,
+      });
+    }
+
+    const toneMark = normalizedText.slice(matchIndex, matchIndex + 1);
+    const syllableHead = normalizedText.slice(0, matchIndex);
+    const syllableTail = normalizedText.slice(matchIndex + 1);
+
+    const syllable = `${syllableHead}${syllableTail}`;
+
+    if (!this.isValidSyllable(syllable)) {
+      throw new Error(`Invalid syllable '${syllable}'`);
+    }
+
+    const parsedTone = this.parseToneMark(toneMark);
+
+    if (!parsedTone.isValid) {
+      throw new Error(`Invalid tone mark '${toneMark}'`);
+    }
+
+    return new SyllableConverter({
+      syllable: syllable,
+      tone: parsedTone.tone,
+    });
+  }
+
+  public fromBopomofo(text: string): SyllableConverter {
+    // Check if the text starts with a tone mark (neutral tone)
+    const firstCharacter = text.slice(0, 1);
+    let syllable: string;
+    let tone: Tones;
+
+    if (firstCharacter === zhuyinTones[5]) {
+      // Neutral tone - tone mark comes first
+      const bopomofoWithoutTone = text.slice(1);
+      const pinyin = bopomofoToPinyin.get(bopomofoWithoutTone);
+
+      if (!pinyin) {
+        throw new Error(`Invalid bopomofo syllable '${bopomofoWithoutTone}'`);
+      }
+
+      syllable = pinyin;
+      tone = 5;
+    } else {
+      // Check for tone marks at the end
+      let bopomofoWithoutTone = text;
+      let foundTone: Tones | undefined;
+
+      // Check for tone marks at the end (excluding neutral tone and empty string)
+      for (const [toneNumber, toneMark] of Object.entries(zhuyinTones)) {
+        if (toneNumber === "5" || toneMark === "") continue; // Skip neutral and empty
+        if (text.endsWith(toneMark)) {
+          bopomofoWithoutTone = text.slice(0, -toneMark.length);
+          foundTone = Number(toneNumber) as Tones;
+          break;
+        }
+      }
+
+      if (!foundTone) {
+        // No tone mark found, assume neutral tone
+        bopomofoWithoutTone = text;
+        foundTone = 5;
+      }
+
+      const pinyin = bopomofoToPinyin.get(bopomofoWithoutTone);
+
+      if (!pinyin) {
+        throw new Error(`Invalid bopomofo syllable '${bopomofoWithoutTone}'`);
+      }
+
+      syllable = pinyin;
+      tone = foundTone;
+    }
+
+    return new SyllableConverter({
+      syllable: syllable,
+      tone: tone,
+    });
+  }
+
+  private parseToneMark(
+    toneMark: string,
+  ): { tone: Exclude<Tones, 5>; isValid: true } | {
+    tone: undefined;
+    isValid: false;
+  } {
+    const toneNumber = pinyinToneMap.get(toneMark);
+
+    if (!toneNumber) {
+      return { tone: undefined, isValid: false };
+    }
+
+    return { tone: toneNumber, isValid: true };
+  }
+
+  private isValidSyllable(syllable: string): boolean {
+    return pinyinToBopomofo.has(syllable);
+  }
+
+  private parseTone(
+    tone: string,
+  ): { tone: Tones; isValid: true } | { tone: undefined; isValid: false } {
+    const toneNumber = Number(tone);
+
+    if (Number.isNaN(toneNumber)) {
+      return { tone: undefined, isValid: false };
+    }
+
+    if (!this.isValidTone(toneNumber)) {
+      return { tone: undefined, isValid: false };
+    }
+
+    return { tone: toneNumber, isValid: true };
+  }
+
+  private isValidTone(toneNumber: number): toneNumber is Tones {
+    return [1, 2, 3, 4, 5].includes(toneNumber);
+  }
+}
+
+export const syllableParser = new SyllableParser()
+
+export class SyllableConverter {
+  constructor(private readonly syllable: SyllableAST) { }
+
+  public toBopomofo(): string {
+    const bopomofo = pinyinToBopomofo.get(this.syllable.syllable);
+
+    if (!bopomofo) {
+      throw new Error(
+        `Couldn't find bopomofo for syllable '${this.syllable.syllable}'`,
+      );
+    }
+
+    const tone = zhuyinTones[this.syllable.tone];
+
+    if (this.syllable.tone === 5) {
+      return `${tone}${bopomofo}`.normalize("NFC");
+    }
+
+    return `${bopomofo}${tone}`;
+  }
+
+  public toPinyin(): string {
+    const pinyin = this.syllable.syllable;
+    const tone = pinyinTones[this.syllable.tone];
+
+    return `${pinyin}${tone}`.normalize("NFC");
+  }
+}
