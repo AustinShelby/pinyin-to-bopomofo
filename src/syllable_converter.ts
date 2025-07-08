@@ -4,7 +4,7 @@ import type { SyllableAST } from "./types.ts";
 
 // TODO: Should we just call this class Syllable? Let syllable itself take care of converting itself
 export class SyllableConverter {
-  constructor(private readonly syllable: SyllableAST) { }
+  constructor(private readonly syllable: SyllableAST) {}
 
   public toBopomofo(): string {
     const bopomofo = pinyinToBopomofo.get(this.syllable.syllable);

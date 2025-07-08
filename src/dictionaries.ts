@@ -1,6 +1,7 @@
 import { zip } from "@std/collections/zip";
 
-const pinyinSyllables = [
+// TODO: Looking back storing them in two arrays isn't that good of an idea for readability. Maybe turn them back into an object
+export const pinyinSyllables = [
   "chuang",
   "shuang",
   "zhuang",
@@ -414,7 +415,8 @@ const pinyinSyllables = [
   "m",
   "o",
 ];
-const bopomofoSyllables = [
+
+export const bopomofoSyllables = [
   "ㄔㄨㄤ",
   "ㄕㄨㄤ",
   "ㄓㄨㄤ",
@@ -838,6 +840,7 @@ if (pinyinSyllables.length !== bopomofoSyllables.length) {
 export const pinyinToBopomofo = new Map(
   zip(pinyinSyllables, bopomofoSyllables),
 );
+
 export const bopomofoToPinyin = new Map(
   zip(bopomofoSyllables, pinyinSyllables),
 );
