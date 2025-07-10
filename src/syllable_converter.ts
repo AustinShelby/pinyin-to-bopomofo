@@ -4,7 +4,7 @@ import type { SyllableAST } from "./types.ts";
 
 // TODO: Should we just call this class Syllable? Let syllable itself take care of converting itself
 export class SyllableConverter {
-  constructor(private readonly syllable: SyllableAST) {}
+  constructor(private readonly syllable: SyllableAST) { }
 
   public toBopomofo(): string {
     const bopomofo = pinyinToBopomofo.get(this.syllable.syllable);
@@ -27,6 +27,23 @@ export class SyllableConverter {
   public toPinyinNumber(): string {
     // TODO: Should we validate that this syllable exists in the dictionary?
     return `${this.syllable.syllable}${this.syllable.tone}`;
+  }
+
+  public toPinyinToneMark(): string {
+    // TODO: Should we validate that this syllable exists in the dictionary?
+    const pinyinToneMark = pinyinTones[this.syllable.tone];
+    const pos = this.findVowelPosition(this.syllable.syllable);
+
+
+    // TODO: This throws for ㄗㄣ
+    if (pos === undefined) {
+      throw new Error(`Couldn't find vowel for '${this.syllable.syllable}'`);
+    }
+
+    const syllableHead = this.syllable.syllable.slice(0, pos + 1);
+    const syllableTail = this.syllable.syllable.slice(pos + 1);
+
+    return `${syllableHead}${pinyinToneMark}${syllableTail}`.normalize("NFC");
   }
 
   private findVowelPosition(syllable: string): number | undefined {
@@ -56,20 +73,5 @@ export class SyllableConverter {
     }
 
     return undefined;
-  }
-
-  public toPinyinToneMark(): string {
-    // TODO: Should we validate that this syllable exists in the dictionary?
-    const pinyinToneMark = pinyinTones[this.syllable.tone];
-    const pos = this.findVowelPosition(this.syllable.syllable);
-
-    if (pos === undefined) {
-      throw new Error(`Couldn't find vowel for '${this.syllable.syllable}'`);
-    }
-
-    const syllableHead = this.syllable.syllable.slice(0, pos + 1);
-    const syllableTail = this.syllable.syllable.slice(pos + 1);
-
-    return `${syllableHead}${pinyinToneMark}${syllableTail}`.normalize("NFC");
   }
 }
