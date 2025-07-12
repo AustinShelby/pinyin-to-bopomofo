@@ -1,6 +1,6 @@
-import { pinyinSyllables, bopomofoSyllables, bopomofoToPinyin } from "./dictionaries.ts";
+import { pinyinSyllables, bopomofoSyllables, bopomofoToPinyin, pinyinToBopomofo } from "./dictionaries.ts";
 import { SyllableConverter } from "./syllable_converter.ts";
-import { pinyinToneMap, zhuyinToneMap } from "./tones.ts";
+import { pinyinToneMap, zhuyinToneMap, zhuyinTones } from "./tones.ts";
 import type { SyllableAST, Tones } from "./types.ts";
 
 export type ConvertOptions = {
@@ -15,24 +15,107 @@ const toneMatchingRegex = new RegExp(`${[
 ].join("|")
   }`, "g")
 
-const zhuyinToneMatchingRegex = new RegExp(`${[
+const zhuyingAfterTones = [
   String.fromCodePoint(714),
   String.fromCodePoint(711),
-  String.fromCodePoint(715),
-  String.fromCodePoint(729),
-].join("|")
-  }`, "g")
+  String.fromCodePoint(715)
+]
 
+// TODO: For some reason this doesn't work as a RegExp. No idea why. Maybe because it's very static
 const pinyinNumberSyllable = /(?<syllable>[a-z]+)(?<tone>\d)/g;
 
 export class Converter {
 
+  // TODO: Write proper names. Refactor to nice, readable functions like 'bopomofoToPinyin'
   public bopomofoToPinyin(text: string): string {
-    const matchedTones = this.extractZhuyinToneMarks(text)
-    const textWithoutTones = this.removeToneMarks(text, matchedTones)
-    const syllables = this.splitIntoZhuyinSyllables(textWithoutTones)
-    const syllableASTs = this.associateZhuyinTonesWithSyllables(syllables, matchedTones)
+    const zhuyinSyllables = this.splitIntoZhuyinSyllablesAndTones(text)
+    const syllableASTs = this.toSyllableASTs(zhuyinSyllables)
     return this.convertSyllablesToPinyin(syllableASTs)
+  }
+
+  private toSyllableASTs(syllables: {
+    syllable: string;
+    tone: string;
+  }[]): SyllableAST[] {
+    return syllables.map(({ syllable, tone }) => {
+      const pinyinTone = this.getZhuyinToneNumber(tone)
+      const pinyinSyllable = bopomofoToPinyin.get(syllable)
+
+      if (!pinyinSyllable) {
+        throw new Error(`Invalid syllable: ${pinyinSyllable}`)
+      }
+
+      return {
+        tone: pinyinTone,
+        syllable: pinyinSyllable
+      }
+    })
+  }
+
+  // TODO: Refactor this absolute monstrosity
+  // TODO: I feel like we could do the transformation to SyllableAST here too
+  private splitIntoZhuyinSyllablesAndTones(text: string): { syllable: string, tone: string }[] {
+    if (text.length === 0) {
+      return []
+    }
+
+    const firstCharacter = text.slice(0, 1)
+
+    if (firstCharacter === zhuyinTones[5]) {
+      const rest = text.slice(1)
+      const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => rest.startsWith(syllable))
+
+      if (!matchingZhuyingSyllable) {
+        throw new Error(`Couldn't find zhuying syllable in: ${rest}`)
+      }
+
+      const restOfText = rest.slice(matchingZhuyingSyllable.length)
+
+      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText)
+
+      return [{
+        syllable: matchingZhuyingSyllable,
+        tone: firstCharacter
+      }].concat(otherSyllables)
+    }
+
+    const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => text.startsWith(syllable))
+
+    if (!matchingZhuyingSyllable) {
+      throw new Error(`Couldn't find zhuying syllable in: ${text}`)
+    }
+
+    const characterAfterSyllable = text.slice(matchingZhuyingSyllable.length, matchingZhuyingSyllable.length + 1)
+
+    if (characterAfterSyllable === "") {
+      const restOfText = text.slice(matchingZhuyingSyllable.length)
+      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText)
+
+      return [{
+        syllable: matchingZhuyingSyllable,
+        tone: ""
+      }].concat(otherSyllables)
+    } else {
+      const isValidAfterSyllableTone = zhuyingAfterTones.includes(characterAfterSyllable)
+
+      if (!isValidAfterSyllableTone) {
+        throw new Error(`Invalid tone: ${characterAfterSyllable}`)
+      }
+
+      const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => text.startsWith(syllable))
+
+      if (!matchingZhuyingSyllable) {
+        throw new Error(`Couldn't find zhuying syllable in: ${text}`)
+      }
+
+      const restOfText = text.slice(matchingZhuyingSyllable.length + 1)
+      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText)
+
+      return [{
+        syllable: matchingZhuyingSyllable,
+        tone: characterAfterSyllable
+      }].concat(otherSyllables)
+    }
   }
 
   private convertSyllablesToPinyin(syllableASTs: SyllableAST[]): string {
@@ -41,59 +124,12 @@ export class Converter {
       .join("")
   }
 
-  private splitIntoZhuyinSyllables(text: string): string[] {
-    if (text.length === 0) {
-      return []
-    }
-
-    const matched = bopomofoSyllables.find((syllable) => text.startsWith(syllable))
-
-    if (!matched) {
-      throw new Error(`Can't find zhuyin syllable in text '${text}'`)
-    }
-
-    const restOfText = text.slice(matched.length)
-    const rest = this.splitIntoZhuyinSyllables(restOfText)
-    return [matched].concat(rest)
-  }
-
-  private extractZhuyinToneMarks(normalized: string): { tone: string, index: number }[] {
-    const parsedTones = normalized.matchAll(zhuyinToneMatchingRegex)
-    return Array.from(parsedTones, (match) => ({ tone: match[0], index: match.index }))
-  }
-
-  // TODO: This doesn't work as zhuyin tones can either come before or after the syllable. Should be an easy fix as we don't have to worry about normalization for example.
-  private associateZhuyinTonesWithSyllables(
-    syllables: string[],
-    matchedTones: { tone: string, index: number }[]
-  ): SyllableAST[] {
-    return syllables.reduce((acc, cur) => {
-      // TODO: We can store this in 'acc' so we don't have to calculate it every time
-      const currentSyllableStartPosition = this.calculateSyllablesLength(acc)
-      const currentSyllableEndPosition = currentSyllableStartPosition + cur.length
-      const matchedTone = this.findMatchedTone(matchedTones, currentSyllableStartPosition, currentSyllableEndPosition)
-      const matchedToneNumber = this.getZhuyinToneNumber(matchedTone)
-
-      const pinyinSyllable = bopomofoToPinyin.get(cur)
-
-      if (!pinyinSyllable) {
-        throw new Error(`Invalid syllable '${cur}'`)
-      }
-
-      return acc.concat({
-        syllable: pinyinSyllable,
-        tone: matchedToneNumber
-      })
-
-    }, [] as SyllableAST[])
-  }
-
-  private getZhuyinToneNumber(matchedTone: { tone: string, index: number } | undefined): Tones {
-    if (!matchedTone) {
+  private getZhuyinToneNumber(tone: string): Tones {
+    if (tone === "") {
       return 1
     }
 
-    return zhuyinToneMap.get(matchedTone.tone) ?? 1
+    return zhuyinToneMap.get(tone) ?? 1
   }
 
   public pinyinNumberToBopomofo(text: string): string {

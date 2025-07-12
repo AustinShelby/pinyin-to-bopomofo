@@ -21,7 +21,12 @@ Deno.test(`converts 'zen3me5yang4' to 'ㄗㄣˇ˙ㄇㄜㄧㄤˋ'`, () => {
   assertEquals(result, `ㄗㄣˇ˙ㄇㄜㄧㄤˋ`);
 })
 
-Deno.test.only(`converts 'ㄗㄣˇ˙ㄇㄜㄧㄤˋ' to 'zěnmeyàng'`, () => {
+Deno.test(`converts 'ㄗㄣˇ˙ㄇㄜㄧㄤˋ' to 'zěnmeyàng'`, () => {
   const result = converter.bopomofoToPinyin("ㄗㄣˇ˙ㄇㄜㄧㄤˋ")
   assertEquals(result, `zěnmeyàng`);
+})
+
+Deno.test(`converts 'ㄐㄧㄝˋㄕㄠˋ' to 'jièshào'`, () => {
+  const result = converter.bopomofoToPinyin("ㄐㄧㄝˋㄕㄠˋ")
+  assertEquals(result, `jièshào`);
 })
