@@ -1,47 +1,54 @@
-import { pinyinToBopomofo } from "./dictionaries.ts";
+import { pinyinToBopomofoDictionary } from "./dictionaries.ts";
 import { pinyinTones, zhuyinTones } from "./tones.ts";
-import type { SyllableAST } from "./types.ts";
+import type { PinyinStyle, SyllableAST } from "./types.ts";
 
 // TODO: Should we just call this class Syllable? Let syllable itself take care of converting itself
 export class SyllableConverter {
-  constructor(private readonly syllable: SyllableAST) { }
 
-  public toBopomofo(): string {
-    const bopomofo = pinyinToBopomofo.get(this.syllable.syllable);
+  public toBopomofo(syllable: SyllableAST): string {
+    const bopomofo = pinyinToBopomofoDictionary.get(syllable.syllable);
 
     if (!bopomofo) {
       throw new Error(
-        `Couldn't find bopomofo for syllable '${this.syllable.syllable}'`,
+        `Couldn't find bopomofo for syllable '${syllable.syllable}'`,
       );
     }
 
-    const tone = zhuyinTones[this.syllable.tone];
+    const tone = zhuyinTones[syllable.tone];
 
-    if (this.syllable.tone === 5) {
+    if (syllable.tone === 5) {
       return `${tone}${bopomofo}`;
     }
 
     return `${bopomofo}${tone}`;
   }
 
-  public toPinyinNumber(): string {
+  private toPinyinNumber(syllable: SyllableAST): string {
     // TODO: Should we validate that this syllable exists in the dictionary?
-    return `${this.syllable.syllable}${this.syllable.tone}`;
+    return `${syllable.syllable}${syllable.tone}`;
   }
 
-  public toPinyinToneMark(): string {
+  public toPinyin(syllable: SyllableAST, style: PinyinStyle): string {
+    if (style === 'TONE_MARK') {
+      return this.toPinyinToneMark(syllable)
+    }
+
+    return this.toPinyinNumber(syllable)
+  }
+
+  private toPinyinToneMark(syllable: SyllableAST): string {
     // TODO: Should we validate that this syllable exists in the dictionary?
-    const pinyinToneMark = pinyinTones[this.syllable.tone];
-    const pos = this.findVowelPosition(this.syllable.syllable);
+    const pinyinToneMark = pinyinTones[syllable.tone];
+    const pos = this.findVowelPosition(syllable.syllable);
 
 
     // TODO: This throws for ㄗㄣ
     if (pos === undefined) {
-      throw new Error(`Couldn't find vowel for '${this.syllable.syllable}'`);
+      throw new Error(`Couldn't find vowel for '${syllable.syllable}'`);
     }
 
-    const syllableHead = this.syllable.syllable.slice(0, pos + 1);
-    const syllableTail = this.syllable.syllable.slice(pos + 1);
+    const syllableHead = syllable.syllable.slice(0, pos + 1);
+    const syllableTail = syllable.syllable.slice(pos + 1);
 
     return `${syllableHead}${pinyinToneMark}${syllableTail}`.normalize("NFC");
   }
@@ -75,3 +82,5 @@ export class SyllableConverter {
     return undefined;
   }
 }
+
+export const syllableConverter = new SyllableConverter();

@@ -837,10 +837,10 @@ if (pinyinSyllables.length !== bopomofoSyllables.length) {
   );
 }
 
-export const pinyinToBopomofo = new Map(
+export const pinyinToBopomofoDictionary = new Map(
   zip(pinyinSyllables, bopomofoSyllables),
 );
 
-export const bopomofoToPinyin = new Map(
+export const bopomofoToPinyinDictionary = new Map(
   zip(bopomofoSyllables, pinyinSyllables),
 );

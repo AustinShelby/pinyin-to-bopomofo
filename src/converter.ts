@@ -1,7 +1,7 @@
-import { pinyinSyllables, bopomofoSyllables, bopomofoToPinyin, pinyinToBopomofo } from "./dictionaries.ts";
-import { SyllableConverter } from "./syllable_converter.ts";
+import { pinyinSyllables, bopomofoSyllables, bopomofoToPinyinDictionary } from "./dictionaries.ts";
+import { syllableConverter } from "./syllable_converter.ts";
 import { pinyinToneMap, zhuyinToneMap, zhuyinTones } from "./tones.ts";
-import type { SyllableAST, Tones } from "./types.ts";
+import type { SyllableAST, Tones, PinyinStyle } from "./types.ts";
 
 export type ConvertOptions = {
   from: "pinyinToneMark", to: "bopomofo"
@@ -26,11 +26,10 @@ const pinyinNumberSyllable = /(?<syllable>[a-z]+)(?<tone>\d)/g;
 
 export class Converter {
 
-  // TODO: Write proper names. Refactor to nice, readable functions like 'bopomofoToPinyin'
-  public bopomofoToPinyin(text: string): string {
+  public parseBopomofo(text: string): SyllableAST[] {
     const zhuyinSyllables = this.splitIntoZhuyinSyllablesAndTones(text)
     const syllableASTs = this.toSyllableASTs(zhuyinSyllables)
-    return this.convertSyllablesToPinyin(syllableASTs)
+    return syllableASTs
   }
 
   private toSyllableASTs(syllables: {
@@ -39,7 +38,7 @@ export class Converter {
   }[]): SyllableAST[] {
     return syllables.map(({ syllable, tone }) => {
       const pinyinTone = this.getZhuyinToneNumber(tone)
-      const pinyinSyllable = bopomofoToPinyin.get(syllable)
+      const pinyinSyllable = bopomofoToPinyinDictionary.get(syllable)
 
       if (!pinyinSyllable) {
         throw new Error(`Invalid syllable: ${pinyinSyllable}`)
@@ -98,30 +97,16 @@ export class Converter {
     } else {
       const isValidAfterSyllableTone = zhuyingAfterTones.includes(characterAfterSyllable)
 
-      if (!isValidAfterSyllableTone) {
-        throw new Error(`Invalid tone: ${characterAfterSyllable}`)
-      }
-
-      const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => text.startsWith(syllable))
-
-      if (!matchingZhuyingSyllable) {
-        throw new Error(`Couldn't find zhuying syllable in: ${text}`)
-      }
-
-      const restOfText = text.slice(matchingZhuyingSyllable.length + 1)
+      // TODO: Code smell
+      const restOfText = text.slice(matchingZhuyingSyllable.length + (isValidAfterSyllableTone ? 1 : 0))
       const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText)
 
       return [{
         syllable: matchingZhuyingSyllable,
-        tone: characterAfterSyllable
+        // TODO: Code smell
+        tone: isValidAfterSyllableTone ? characterAfterSyllable : "1"
       }].concat(otherSyllables)
     }
-  }
-
-  private convertSyllablesToPinyin(syllableASTs: SyllableAST[]): string {
-    return syllableASTs
-      .map((syllable) => new SyllableConverter(syllable).toPinyinToneMark())
-      .join("")
   }
 
   private getZhuyinToneNumber(tone: string): Tones {
@@ -132,7 +117,15 @@ export class Converter {
     return zhuyinToneMap.get(tone) ?? 1
   }
 
-  public pinyinNumberToBopomofo(text: string): string {
+  public parsePinyin(text: string, style: PinyinStyle): SyllableAST[] {
+    if (style === "TONE_MARK") {
+      return this.parsePinyinToneMarks(text)
+    }
+
+    return this.parsePinyinNumber(text)
+  }
+
+  private parsePinyinNumber(text: string): SyllableAST[] {
     const syllables = text.matchAll(pinyinNumberSyllable)
 
     const syllableASTs = Array.from(syllables, (match) => {
@@ -156,20 +149,20 @@ export class Converter {
       }
     })
 
-    return this.convertSyllablesToBopomofo(syllableASTs)
+    return syllableASTs
   }
 
   private isValidTone(tone: number): tone is Tones {
     return [1, 2, 3, 4, 5].includes(tone)
   }
 
-  public convert(text: string, options: ConvertOptions): string {
+  private parsePinyinToneMarks(text: string): SyllableAST[] {
     const normalized = text.normalize("NFD")
     const matchedTones = this.extractToneMarks(normalized)
     const textWithoutTones = this.removeToneMarks(normalized, matchedTones)
     const syllables = this.splitIntoSyllables(textWithoutTones)
     const syllableASTs = this.associateTonesWithSyllables(syllables, matchedTones)
-    return this.convertSyllablesToBopomofo(syllableASTs)
+    return syllableASTs
   }
 
   private extractToneMarks(normalized: string): { tone: string, index: number }[] {
@@ -242,11 +235,21 @@ export class Converter {
 
   private convertSyllablesToBopomofo(syllableASTs: SyllableAST[]): string {
     return syllableASTs
-      .map((syllable) => new SyllableConverter(syllable).toBopomofo())
+      .map((syllable) => syllableConverter.toBopomofo(syllable))
       .join("")
   }
 }
 
 export const converter = new Converter()
 
-// TODO: Maybe it's just easier to have two functions pinyinToBopomofo and bopomofoToPinyin that take the text and option style: 'NUMBER' | 'TONE_MARK'
+export const bopomofoToPinyin = (text: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string => {
+  const syllables = converter.parseBopomofo(text)
+  const pinyin = syllables.map((syllable) => syllableConverter.toPinyin(syllable, pinyinStyle)).join("")
+  return pinyin
+}
+
+export const pinyinToBopomofo = (text: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string => {
+  const syllables = converter.parsePinyin(text, pinyinStyle)
+  const bopomofo = syllables.map((syllable) => syllableConverter.toBopomofo(syllable)).join("")
+  return bopomofo
+}
