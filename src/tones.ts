@@ -29,13 +29,12 @@ export const zhuyinTones = {
 };
 
 export const pinyinToneRegex = new RegExp(
-  `(${
-    [
-      String.fromCodePoint(772),
-      String.fromCodePoint(769),
-      String.fromCodePoint(780),
-      String.fromCodePoint(768),
-    ].join("|")
+  `(${[
+    String.fromCodePoint(772),
+    String.fromCodePoint(769),
+    String.fromCodePoint(780),
+    String.fromCodePoint(768),
+  ].join("|")
   })`,
   "i",
 );

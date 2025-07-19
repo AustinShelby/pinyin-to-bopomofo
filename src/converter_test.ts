@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { bopomofoToPinyin, pinyinToBopomofo } from "./converter.ts";
+import { pinyinToBopomofo, bopomofoToPinyin } from "./converters.ts";
 
 const testData = [{
   pinyinNumber: "yao1",
@@ -63,30 +63,24 @@ const testData = [{
   zhuyin: "ㄗㄣˇ˙ㄇㄜㄧㄤˋ",
 }];
 
-testData.forEach(({ pinyinNumber, zhuyin }) =>
+testData.forEach(({ pinyinNumber, pinyinToneMark, zhuyin }) => {
   Deno.test(`converts '${pinyinNumber}' to '${zhuyin}'`, () => {
     const result = pinyinToBopomofo(pinyinNumber, "NUMBER");
     assertEquals(result, zhuyin);
   })
-);
 
-testData.forEach(({ pinyinToneMark, zhuyin }) =>
   Deno.test(`converts '${pinyinToneMark}' to '${zhuyin}'`, () => {
     const result = pinyinToBopomofo(pinyinToneMark, "TONE_MARK");
     assertEquals(result, zhuyin);
   })
-);
 
-testData.forEach(({ pinyinToneMark, zhuyin }) =>
   Deno.test(`converts '${zhuyin}' to '${pinyinToneMark}'`, () => {
     const result = bopomofoToPinyin(zhuyin, "TONE_MARK")
     assertEquals(result, pinyinToneMark);
   })
-);
 
-testData.forEach(({ pinyinNumber, zhuyin }) =>
   Deno.test(`converts '${zhuyin}' to '${pinyinNumber}'`, () => {
     const result = bopomofoToPinyin(zhuyin, "NUMBER")
     assertEquals(result, pinyinNumber);
   })
-);
+});

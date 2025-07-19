@@ -1,6 +1,8 @@
 import { pinyinSyllables, bopomofoSyllables, bopomofoToPinyinDictionary } from "./dictionaries.ts";
+import { Parser } from "./parsers/parser.ts";
 import { syllableConverter } from "./syllable_converter.ts";
 import { pinyinToneMap, zhuyinToneMap, zhuyinTones } from "./tones.ts";
+import { Transformer } from "./transformers/transformer.ts";
 import type { SyllableAST, Tones, PinyinStyle } from "./types.ts";
 
 export type ConvertOptions = {
@@ -24,7 +26,8 @@ const zhuyingAfterTones = [
 // TODO: For some reason this doesn't work as a RegExp. No idea why. Maybe because it's very static
 const pinyinNumberSyllable = /(?<syllable>[a-z]+)(?<tone>\d)/g;
 
-export class Converter {
+// TODO: This class doesn't make any sense. There's no overlap between the different parsers. I feel like we should have a very light parser that takes a "strategy" for parsing and conversion. This way we can extend it to IPA easily in the future.
+export class Converter2 {
 
   public parseBopomofo(text: string): SyllableAST[] {
     const zhuyinSyllables = this.splitIntoZhuyinSyllablesAndTones(text)
@@ -232,15 +235,9 @@ export class Converter {
   ): { tone: string, index: number } | undefined {
     return matchedTones.find(({ index }) => index >= start && index <= end)
   }
-
-  private convertSyllablesToBopomofo(syllableASTs: SyllableAST[]): string {
-    return syllableASTs
-      .map((syllable) => syllableConverter.toBopomofo(syllable))
-      .join("")
-  }
 }
 
-export const converter = new Converter()
+export const converter = new Converter2()
 
 export const bopomofoToPinyin = (text: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string => {
   const syllables = converter.parseBopomofo(text)
@@ -252,4 +249,20 @@ export const pinyinToBopomofo = (text: string, pinyinStyle: PinyinStyle = 'TONE_
   const syllables = converter.parsePinyin(text, pinyinStyle)
   const bopomofo = syllables.map((syllable) => syllableConverter.toBopomofo(syllable)).join("")
   return bopomofo
+}
+
+export class Converter {
+  private readonly parser: Parser;
+  private readonly transformer: Transformer;
+
+  constructor({ parser, transformer }: { parser: Parser, transformer: Transformer }) {
+    this.parser = parser;
+    this.transformer = transformer;
+  }
+
+  public convert(text: string): string {
+    const syllableAsts = this.parser.parse(text)
+    const result = this.transformer.transform(syllableAsts)
+    return result
+  }
 }
