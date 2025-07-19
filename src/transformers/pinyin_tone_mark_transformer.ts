@@ -2,6 +2,8 @@ import { pinyinTones } from "../tones.ts";
 import type { SyllableAST } from "../types.ts";
 import { Transformer } from "./transformer.ts";
 
+const MAIN_VOWELS = ["a", "e", "o", "ü"];
+
 export class PinyinToneMarkTransformer extends Transformer {
   public transform(syllables: SyllableAST[]): string {
     return syllables.map((syllable) => this.toPinyinToneMark(syllable)).join("");
@@ -22,9 +24,7 @@ export class PinyinToneMarkTransformer extends Transformer {
   }
 
   private findVowelPosition(syllable: string): number | undefined {
-    const mainVowels = ["a", "e", "o", "ü"];
-
-    const mainVowelPositions = mainVowels
+    const mainVowelPositions = MAIN_VOWELS
       .map((vowel) => syllable.indexOf(vowel))
       .find((pos) => pos > -1);
 
@@ -49,4 +49,5 @@ export class PinyinToneMarkTransformer extends Transformer {
 
     return undefined;
   }
-} 
+}
+export const pinyinToneMarkTransformer = new PinyinToneMarkTransformer()

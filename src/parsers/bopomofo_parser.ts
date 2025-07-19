@@ -95,4 +95,6 @@ export class BopomofoParser extends Parser {
 
     return zhuyinToneMap.get(tone) ?? 1;
   }
-} 
+}
+
+export const bopomofoParser = new BopomofoParser()

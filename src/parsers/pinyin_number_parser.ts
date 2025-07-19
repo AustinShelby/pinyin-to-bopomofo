@@ -1,11 +1,11 @@
 import type { SyllableAST, Tones } from "../types.ts";
 import { Parser } from "./parser.ts";
 
-const pinyinNumberSyllable = /(?<syllable>[a-z]+)(?<tone>\d)/g;
+const PINYIN_NUMBER_SYLLABLE_REGEX = /(?<syllable>[a-z]+)(?<tone>\d)/g;
 
 export class PinyinNumberParser extends Parser {
   public parse(text: string): SyllableAST[] {
-    const syllables = text.matchAll(pinyinNumberSyllable)
+    const syllables = text.matchAll(PINYIN_NUMBER_SYLLABLE_REGEX)
 
     const syllableASTs = Array.from(syllables, (match) => {
       const syllable = match.groups?.["syllable"]
@@ -33,4 +33,6 @@ export class PinyinNumberParser extends Parser {
   private isValidTone(tone: number): tone is Tones {
     return [1, 2, 3, 4, 5].includes(tone)
   }
-} 
+}
+
+export const pinyinNumberParser = new PinyinNumberParser()

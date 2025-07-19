@@ -28,3 +28,5 @@ export class BopomofoTransformer extends Transformer {
     return text
   }
 }
+
+export const bopomofoTransformer = new BopomofoTransformer()

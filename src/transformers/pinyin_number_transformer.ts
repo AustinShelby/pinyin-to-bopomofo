@@ -9,4 +9,6 @@ export class PinyinNumberTransformer extends Transformer {
   private toPinyinNumber(syllable: SyllableAST): string {
     return `${syllable.syllable}${syllable.tone}`;
   }
-} 
+}
+
+export const pinyinNumberTransformer = new PinyinNumberTransformer()

@@ -3,7 +3,7 @@ import { pinyinToneMap } from "../tones.ts";
 import type { SyllableAST, Tones } from "../types.ts";
 import { Parser } from "./parser.ts";
 
-const toneMatchingRegex = new RegExp(`${[
+const TONE_MATCH_REGEX = new RegExp(`${[
   String.fromCodePoint(772),
   String.fromCodePoint(769),
   String.fromCodePoint(780),
@@ -22,7 +22,7 @@ export class PinyinToneMarkParser extends Parser {
   }
 
   private extractToneMarks(normalized: string): { tone: string, index: number }[] {
-    const parsedTones = normalized.matchAll(toneMatchingRegex)
+    const parsedTones = normalized.matchAll(TONE_MATCH_REGEX)
     return Array.from(parsedTones, (match) => ({ tone: match[0], index: match.index }))
   }
 
@@ -36,6 +36,7 @@ export class PinyinToneMarkParser extends Parser {
       return []
     }
 
+    // TODO: Fix
     const matched = pinyinSyllables.find((syllable) => text.startsWith(syllable))
 
     if (!matched) {
@@ -89,3 +90,5 @@ export class PinyinToneMarkParser extends Parser {
     return matchedTones.find(({ index }) => index >= start && index <= end)
   }
 }
+
+export const pinyinToneMarkParser = new PinyinToneMarkParser()
