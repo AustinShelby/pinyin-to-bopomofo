@@ -17,16 +17,32 @@ Deno
 deno add jsr:@austinshelby/pinyin-to-bopomofo
 ```
 
-## Quickstart
+## Guide
+
+Translate between pinyin and bopomofo.
 
 ```ts
-import { syllableParser } from "@austinshelby/pinyin-to-bopomofo";
+import {
+  bopomofoToPinyin,
+  pinyinToBopomofo,
+} from "@austinshelby/pinyin-to-bopomofo";
 
-const bopomofo = syllableParser.fromPinyinToneMark("zhào").toBopomofo(); // ㄓㄠˋ
+const bopomofo = pinyinToBopomofo("zhào"); // ㄓㄠˋ
 
-const bopomofo2 = syllableParser.fromPinyinNumber("zhao4").toBopomofo(); // ㄓㄠˋ
+const pinyin = bopomofoToPinyin("ㄓㄠˋ"); // zhào
+```
 
-const pinyin = syllableParser.fromBopomofo("ㄓㄠˋ").toPinyinToneMark(); // zhào
+Translate between pinyin (tone numbers) and bopomofo.
+
+```ts
+import {
+  bopomofoToPinyin,
+  pinyinToBopomofo,
+} from "@austinshelby/pinyin-to-bopomofo";
+
+const bopomofo = pinyinToBopomofo("zhao4", "NUMBER"); // ㄓㄠˋ
+
+const pinyin = bopomofoToPinyin("ㄓㄠˋ", "NUMBER"); // zhao4
 ```
 
 ## About

@@ -413,10 +413,14 @@ const SYLLABLES_DICTIONARY = {
   "o": "ㄛ",
 }
 
-export const pinyinToBopomofoDictionary = new Map(
+export const PINYIN_SYLLABLES = Object.keys(SYLLABLES_DICTIONARY)
+
+export const BOPOMOFO_SYLLABLES = Object.values(SYLLABLES_DICTIONARY)
+
+export const PINYIN_TO_BOPOMOFO_DICTIONARY = new Map(
   Object.entries(SYLLABLES_DICTIONARY)
 );
 
-export const bopomofoToPinyinDictionary = new Map(
+export const BOPOMOFO_TO_PINYIN_DICTIONARY = new Map(
   Object.entries(SYLLABLES_DICTIONARY).map(([pinyin, bopomofo]) => [bopomofo, pinyin])
 );

@@ -5,4 +5,5 @@ export type SyllableAST = {
   tone: Tones;
 };
 
+/** Pinyin style */
 export type PinyinStyle = 'TONE_MARK' | 'NUMBER'

@@ -1,4 +1,4 @@
-import { pinyinSyllables } from "../dictionaries.ts";
+import { PINYIN_SYLLABLES } from "../dictionaries.ts";
 import { pinyinToneMap } from "../tones.ts";
 import type { SyllableAST, Tones } from "../types.ts";
 import { Parser } from "./parser.ts";
@@ -36,8 +36,7 @@ export class PinyinToneMarkParser extends Parser {
       return []
     }
 
-    // TODO: Fix
-    const matched = pinyinSyllables.find((syllable) => text.startsWith(syllable))
+    const matched = PINYIN_SYLLABLES.find((syllable) => text.startsWith(syllable))
 
     if (!matched) {
       throw new Error(`Can't find pinyin syllable in text '${text}'`)

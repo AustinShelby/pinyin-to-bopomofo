@@ -7,7 +7,8 @@ import { pinyinNumberTransformer } from "./transformers/pinyin_number_transforme
 import { pinyinToneMarkTransformer } from "./transformers/pinyin_tone_mark_transformer.ts";
 import type { PinyinStyle } from "./types.ts";
 
-export const pinyinToBopomofo = (pinyin: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string => {
+/** Translate a word from pinyin to bopomofo. */
+export function pinyinToBopomofo(pinyin: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string {
   const parser = pinyinStyle === "TONE_MARK" ? pinyinToneMarkParser : pinyinNumberParser
 
   const transformer = bopomofoTransformer
@@ -22,7 +23,8 @@ export const pinyinToBopomofo = (pinyin: string, pinyinStyle: PinyinStyle = 'TON
   return bopomofo
 }
 
-export const bopomofoToPinyin = (bopomofo: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string => {
+/** Translate a word from bopomofo to pinyin. */
+export function bopomofoToPinyin(bopomofo: string, pinyinStyle: PinyinStyle = 'TONE_MARK'): string {
   const parser = bopomofoParser
 
   const transformer = pinyinStyle === "TONE_MARK" ? pinyinToneMarkTransformer : pinyinNumberTransformer

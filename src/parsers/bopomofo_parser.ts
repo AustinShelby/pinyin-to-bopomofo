@@ -1,4 +1,4 @@
-import { bopomofoSyllables, bopomofoToPinyinDictionary } from "../dictionaries.ts";
+import { BOPOMOFO_SYLLABLES, BOPOMOFO_TO_PINYIN_DICTIONARY } from "../dictionaries.ts";
 import { zhuyinToneMap, zhuyinTones } from "../tones.ts";
 import type { SyllableAST, Tones } from "../types.ts";
 import { Parser } from "./parser.ts";
@@ -22,7 +22,7 @@ export class BopomofoParser extends Parser {
   }[]): SyllableAST[] {
     return syllables.map(({ syllable, tone }) => {
       const pinyinTone = this.getZhuyinToneNumber(tone);
-      const pinyinSyllable = bopomofoToPinyinDictionary.get(syllable);
+      const pinyinSyllable = BOPOMOFO_TO_PINYIN_DICTIONARY.get(syllable);
 
       if (!pinyinSyllable) {
         throw new Error(`Invalid syllable: ${syllable}`);
@@ -35,57 +35,65 @@ export class BopomofoParser extends Parser {
     });
   }
 
-  private splitIntoZhuyinSyllablesAndTones(text: string): { syllable: string, tone: string }[] {
+  private splitIntoZhuyinSyllablesAndTones(text: string): { syllable: string; tone: string }[] {
     if (text.length === 0) {
       return [];
     }
 
-    const firstCharacter = text.slice(0, 1);
-
-    if (firstCharacter === zhuyinTones[5]) {
-      const rest = text.slice(1);
-      const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => rest.startsWith(syllable));
-
-      if (!matchingZhuyingSyllable) {
-        throw new Error(`Couldn't find zhuying syllable in: ${rest}`);
-      }
-
-      const restOfText = rest.slice(matchingZhuyingSyllable.length);
-      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText);
-
-      return [{
-        syllable: matchingZhuyingSyllable,
-        tone: firstCharacter
-      }].concat(otherSyllables);
+    if (this.isSpecialFirstTone(text)) {
+      return this.handleSpecialFirstTone(text);
     }
 
-    const matchingZhuyingSyllable = bopomofoSyllables.find((syllable) => text.startsWith(syllable));
+    const matchingSyllable = this.findMatchingZhuyinSyllable(text);
+    const { tone, restOfText } = this.extractToneAndRest(text, matchingSyllable);
+    const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText);
 
-    if (!matchingZhuyingSyllable) {
+    return [
+      { syllable: matchingSyllable, tone },
+      ...otherSyllables
+    ];
+  }
+
+  private isSpecialFirstTone(text: string): boolean {
+    return text.slice(0, 1) === zhuyinTones[5];
+  }
+
+  private handleSpecialFirstTone(text: string): { syllable: string; tone: string }[] {
+    const rest = text.slice(1);
+    const matchingSyllable = this.findMatchingZhuyinSyllable(rest);
+    const restOfText = rest.slice(matchingSyllable.length);
+    const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText);
+
+    return [
+      { syllable: matchingSyllable, tone: zhuyinTones[5] },
+      ...otherSyllables
+    ];
+  }
+
+  private findMatchingZhuyinSyllable(text: string): string {
+    const match = BOPOMOFO_SYLLABLES.find((syllable) => text.startsWith(syllable));
+
+    if (!match) {
       throw new Error(`Couldn't find zhuying syllable in: ${text}`);
     }
 
-    const characterAfterSyllable = text.slice(matchingZhuyingSyllable.length, matchingZhuyingSyllable.length + 1);
+    return match;
+  }
+
+  private extractToneAndRest(text: string, syllable: string): { tone: string; restOfText: string } {
+    const characterAfterSyllable = text.slice(syllable.length, syllable.length + 1);
 
     if (characterAfterSyllable === "") {
-      const restOfText = text.slice(matchingZhuyingSyllable.length);
-      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText);
-
-      return [{
-        syllable: matchingZhuyingSyllable,
-        tone: ""
-      }].concat(otherSyllables);
-    } else {
-      const isValidAfterSyllableTone = zhuyingAfterTones.includes(characterAfterSyllable);
-
-      const restOfText = text.slice(matchingZhuyingSyllable.length + (isValidAfterSyllableTone ? 1 : 0));
-      const otherSyllables = this.splitIntoZhuyinSyllablesAndTones(restOfText);
-
-      return [{
-        syllable: matchingZhuyingSyllable,
-        tone: isValidAfterSyllableTone ? characterAfterSyllable : "1"
-      }].concat(otherSyllables);
+      return { tone: "", restOfText: text.slice(syllable.length) };
     }
+
+    const isValidAfterSyllableTone = zhuyingAfterTones.includes(characterAfterSyllable);
+
+    const tone = isValidAfterSyllableTone ? characterAfterSyllable : "1";
+
+    const restOfText = text.slice(syllable.length + (isValidAfterSyllableTone ? 1 : 0));
+
+    return { tone, restOfText };
   }
 
   private getZhuyinToneNumber(tone: string): Tones {

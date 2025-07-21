@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals, assertThrows } from "jsr:@std/assert";
 import { pinyinToBopomofo, bopomofoToPinyin } from "./converters.ts";
 
 const testData = [{
@@ -84,3 +84,11 @@ testData.forEach(({ pinyinNumber, pinyinToneMark, zhuyin }) => {
     assertEquals(result, pinyinNumber);
   })
 });
+
+Deno.test(`throws when trying to translate an incorrect word from bopomofo`, () => {
+  assertThrows(() => bopomofoToPinyin("xxx"), Error)
+})
+
+Deno.test(`throws when trying to translate an incorrect word from pinyin`, () => {
+  assertThrows(() => pinyinToBopomofo("xxx"), Error)
+})
